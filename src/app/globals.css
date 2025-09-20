@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%; /* Pure white background */
+    --foreground: 222.2 47.4% 11.2%; /* Dark charcoal text */
+
+    --muted: 210 40% 96.1%; /* Light grey for muted backgrounds */
+    --muted-foreground: 215.4 16.3% 46.9%; /* Slightly darker grey for muted text */
+
+    --popover: 0 0% 100%; /* White popovers */
+    --popover-foreground: 222.2 47.4% 11.2%;
+
+    --card: 0 0% 100%; /* White cards */
+    --card-foreground: 222.2 47.4% 11.2%;
+
+    --border: 214.3 31.8% 91.4%; /* Light grey border */
+    --input: 214.3 31.8% 91.4%; /* Light grey input border */
+    --ring: 217.2 91.2% 59.8%; /* Vibrant blue focus ring */
+
+    --primary: 217.2 91.2% 59.8%; /* Modern vibrant blue for primary actions */
+    --primary-foreground: 0 0% 100%; /* White text on primary */
+
+    --secondary: 210 40% 96.1%; /* Light grey secondary buttons */
+    --secondary-foreground: 222.2 47.4% 11.2%; /* Dark text on secondary */
+
+    --accent: 210 40% 96.1%; /* Light grey accent for hover/active states */
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%; /* Red for destructive actions */
+    --destructive-foreground: 0 0% 100%;
+
+    --radius: 0.5rem; /* Softly rounded corners */
+    --shadow-subtle: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.03); /* Lighter, more subtle shadow */
+
+    /* Chart Colors - keeping existing or adjusting for light background */
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+
+    /* Sidebar Colors (adjusting to new light palette) */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222.2 47.4% 11.2%;
+    --sidebar-primary: 217.2 91.2% 59.8%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96.1%;
+    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Providing a basic dark mode for good measure, it's good practice to keep both */
+    --background: 220 12% 10%;
+    --foreground: 210 20% 98%;
+    --card: 220 12% 13%;
+    --card-foreground: 210 20% 98%;
+    --popover: 220 12% 13%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 210 80% 60%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 220 12% 20%;
+    --secondary-foreground: 210 20% 90%;
+    --muted: 220 12% 25%;
+    --muted-foreground: 210 10% 60%;
+    --accent: 210 80% 70%;
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 220 12% 25%;
+    --input: 220 12% 20%;
+    --ring: 210 80% 60%;
+
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+
+    --sidebar-background: 220 12% 10%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 210 80% 60%;
+    --sidebar-primary-foreground: 210 20% 98%;
+    --sidebar-accent: 210 80% 70%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 220 12% 25%;
+    --sidebar-ring: 210 80% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+  }
+}
