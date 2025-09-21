@@ -46,13 +46,21 @@ export function LinkCard({ link, onDelete }: LinkCardProps) {
         </div>
         <CardHeader className="pt-4">
           <div className="flex justify-between items-start gap-4">
-            <CardTitle className="font-heading text-lg break-words">{link.title}</CardTitle>
-            <Badge variant={categoryVariants[link.category] || "outline"} className="shrink-0 capitalize text-nowrap">{link.category}</Badge>
+            <CardTitle className="font-heading text-lg sm:text-xl break-words">{link.title}</CardTitle>
+            <Badge variant={categoryVariants[link.category] || "outline"} className="shrink-0 capitalize text-nowrap">
+              {link.category}
+            </Badge>
           </div>
+          <p className="text-sm text-muted-foreground">{link.creatorName}</p>
           <CardDescription className="break-all pt-1">
             <Tooltip>
               <TooltipTrigger asChild>
-                <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors truncate block">
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors block line-clamp-1"
+                >
                   {link.url}
                 </a>
               </TooltipTrigger>

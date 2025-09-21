@@ -6,8 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Inbox } from "lucide-react";
 import type { SavedLink } from "@/lib/types";
-
-const CATEGORIES = ["All", "Music", "Sports", "Education", "Movies", "News", "Gaming", "Entertainment", "Other"];
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { SlidersHorizontal } from "lucide-react";
 
 type LinkLibraryProps = {
   links: SavedLink[];
@@ -18,12 +26,13 @@ export function LinkLibrary({ links, onDelete }: LinkLibraryProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("All");
 
+  const dynamicCategories = useMemo(() => {
+    const categories = new Set(links.map(link => link.category));
+    return ["All", ...Array.from(categories).sort()];
+  }, [links]);
+
   const filteredLinks = useMemo(() => {
     return links
-      .filter((link) => {
-        if (filterCategory === "All") return true;
-        return link.category === filterCategory;
-      })
       .filter((link) => {
         const search = searchTerm.toLowerCase();
         return (
@@ -33,10 +42,10 @@ export function LinkLibrary({ links, onDelete }: LinkLibraryProps) {
         );
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [links, searchTerm, filterCategory]);
-
-  return (
-    <div className="w-full max-w-7xl mx-auto space-y-8">
+    }, [links, searchTerm, filterCategory]);
+  
+    return (
+      <div className="w-full max-w-7xl mx-auto space-y-8">
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-grow">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -48,12 +57,41 @@ export function LinkLibrary({ links, onDelete }: LinkLibraryProps) {
             aria-label="Search links"
           />
         </div>
-        <Select value={filterCategory} onValueChange={setFilterCategory}>
-          <SelectTrigger className="w-full md:w-[220px] h-11" aria-label="Filter by category">
-            <SelectValue placeholder="Filter by category" />
+        <div className="md:hidden flex">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="w-full">
+                <SlidersHorizontal className="mr-2 h-4 w-4" /> Filter
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <SheetHeader>
+                <SheetTitle>Filter Links</SheetTitle>
+                <SheetDescription>
+                  Apply filters to narrow down your link library.
+                </SheetDescription>
+              </SheetHeader>
+              <div className="grid gap-4 py-4">
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger className="w-full h-11" aria-label="Filter by category">
+                    <SelectValue placeholder="Filter by category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dynamicCategories.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </SheetContent>
+          </Sheet>
+          </div>
+         <Select value={filterCategory} onValueChange={setFilterCategory}>
+             <SelectTrigger className="w-full md:w-[220px] h-11 hidden md:block" aria-label="Filter by category">
+             <SelectValue placeholder="Filter by category" />
           </SelectTrigger>
           <SelectContent>
-            {CATEGORIES.map(cat => (
+            {dynamicCategories.map(cat => (
               <SelectItem key={cat} value={cat}>{cat}</SelectItem>
             ))}
           </SelectContent>

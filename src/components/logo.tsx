@@ -1,13 +1,13 @@
-import { Link2 } from 'lucide-react';
+import Image from 'next/image';
+import icon from '../../.idx/icon.png';
 
 export function Logo() {
   return (
     <div className="flex items-center gap-2">
-      <div className="p-2 bg-primary rounded-lg">
-        <Link2 className="h-6 w-6 text-primary-foreground" />
+      <div className="bg-black rounded-lg">
+        <Image src={icon} alt="LinkSaver Logo" width={40} height={40}  /> 
       </div>
       <h1 className="text-2xl font-bold text-foreground font-heading tracking-tight">
-        LinkWise
       </h1>
     </div>
   );

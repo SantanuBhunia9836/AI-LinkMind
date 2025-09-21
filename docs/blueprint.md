@@ -1,4 +1,4 @@
-# **App Name**: LinkWise
+# **App Name**: LinkSever
 
 ## Core Features:
 

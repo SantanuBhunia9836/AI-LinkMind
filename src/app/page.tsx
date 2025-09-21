@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { SavedLink } from "@/lib/types";
 
 import { Header } from "@/components/header";
@@ -32,6 +32,11 @@ export default function Home() {
     }
   }, [links, isClient]);
 
+  const existingCategories = useMemo(() => {
+    const categories = new Set(links.map(link => link.category));
+    return Array.from(categories).sort();
+  }, [links]);
+
   const handleLinkAdded = (newLink: SavedLink) => {
     setLinks(prevLinks => [newLink, ...prevLinks]);
   };
@@ -44,7 +49,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Header />
       <main className="flex-grow container mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-12">
-        <LinkForm onLinkAdded={handleLinkAdded} />
+        <LinkForm onLinkAdded={handleLinkAdded} existingCategories={existingCategories} links={links} />
         <Separator className="my-12" />
         <div className="space-y-4">
           <h2 className="text-3xl font-bold text-center font-heading tracking-tight">Your Link Library</h2>
@@ -55,7 +60,7 @@ export default function Home() {
         {isClient ? <LinkLibrary links={links} onDelete={handleDelete} /> : <LibrarySkeleton />}
       </main>
       <footer className="text-center py-6 text-sm text-muted-foreground border-t">
-        <p>&copy; {new Date().getFullYear()} LinkWise - Your smart video companion.</p>
+        <p>&copy; {new Date().getFullYear()} LinkSever - Your smart video companion.</p>
       </footer>
     </div>
   );

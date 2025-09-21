@@ -22,11 +22,11 @@ const formSchema = z.object({
 
 type LinkFormProps = {
   onLinkAdded: (newLink: SavedLink) => void;
+  existingCategories: string[];
+  links: SavedLink[];
 };
 
-const CATEGORIES = ["Music", "Sports", "Education", "Movies", "News", "Gaming", "Entertainment", "Other"];
-
-export function LinkForm({ onLinkAdded }: LinkFormProps) {
+export function LinkForm({ onLinkAdded, existingCategories, links }: LinkFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categorizationResult, setCategorizationResult] = useState<CategorizationResult | null>(null);
   const [url, setUrl] = useState('');
@@ -38,6 +38,15 @@ export function LinkForm({ onLinkAdded }: LinkFormProps) {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (links.some(link => link.url === values.url)) {
+      toast({
+        variant: "destructive",
+        title: "Duplicate Link",
+        description: "This link has already been saved.",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     setCategorizationResult(null);
     setUrl(values.url);
@@ -50,6 +59,7 @@ export function LinkForm({ onLinkAdded }: LinkFormProps) {
           url: values.url,
           title: result.title,
           description: result.description,
+          creatorName: result.creatorName, // Add this line
           category: result.category,
           thumbnailUrl: result.thumbnailUrl,
           createdAt: new Date().toISOString(),
@@ -85,6 +95,7 @@ export function LinkForm({ onLinkAdded }: LinkFormProps) {
         url: url,
         title: categorizationResult.title,
         description: categorizationResult.description,
+        creatorName: categorizationResult.creatorName, // Add this line
         category: category,
         thumbnailUrl: categorizationResult.thumbnailUrl,
         createdAt: new Date().toISOString(),
@@ -126,7 +137,7 @@ export function LinkForm({ onLinkAdded }: LinkFormProps) {
                     <FormControl>
                       <div className="relative">
                         <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="https://www.youtube.com/watch?v=..." {...field} className="pl-10 h-11" />
+                        <Input placeholder="https://www.youtube.com/watch?v=..." {...field} id="link-input" className="pl-10 h-11" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -157,7 +168,7 @@ export function LinkForm({ onLinkAdded }: LinkFormProps) {
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="text-amber-500" />
               Confirm Category
-            </DialogTitle>
+              </DialogTitle>
             <DialogDescription>
               We're not quite sure about this one. Our AI suggested <span className="font-bold">{categorizationResult?.category}</span>, but please select the correct category to improve accuracy.
             </DialogDescription>
@@ -168,7 +179,7 @@ export function LinkForm({ onLinkAdded }: LinkFormProps) {
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
               <SelectContent>
-                {CATEGORIES.map(cat => (
+                {existingCategories.map(cat => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
               </SelectContent>

@@ -3,6 +3,7 @@ export type SavedLink = {
   url: string;
   title: string;
   description: string;
+  creatorName: string;
   category: string;
   thumbnailUrl: string;
   createdAt: string;
@@ -11,6 +12,7 @@ export type SavedLink = {
 export type CategorizationResult = {
   title: string;
   description: string;
+  creatorName: string;
   category: string;
   confidence: number;
   thumbnailUrl: string;

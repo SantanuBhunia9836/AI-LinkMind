@@ -5,7 +5,7 @@ import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 
 export const metadata: Metadata = {
-  title: 'LinkWise',
+  title: 'LinkSever',
   description: 'Intelligently categorize and save your video links.',
 };
 
