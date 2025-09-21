@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -37,7 +37,20 @@ export function LinkForm({ onLinkAdded, existingCategories, links }: LinkFormPro
     defaultValues: { url: "" },
   });
 
+  useEffect(() => {
+    // Define the global function for Android WebView to call
+    (window as any).setSharedUrl = (url: string) => {
+      form.setValue('url', url, { shouldValidate: true });
+    };
+
+    // Cleanup function: remove the global function when the component unmounts
+    return () => {
+      delete (window as any).setSharedUrl;
+    };
+  }, [form]); // Re-run effect if the form instance changes (unlikely for this component)
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
+
     if (links.some(link => link.url === values.url)) {
       toast({
         variant: "destructive",
@@ -135,12 +148,12 @@ export function LinkForm({ onLinkAdded, existingCategories, links }: LinkFormPro
                 render={({ field }) => (
                   <FormItem className="w-full">
                     <FormControl>
-                      <div className="relative">
-                        <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="https://www.youtube.com/watch?v=..." {...field} id="link-input" className="pl-10 h-11" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
+                    <div className="relative">
+                      <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input placeholder="https://www.youtube.com/watch?v=..." {...field} id="link-input" className="pl-10 h-11" />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
                   </FormItem>
                 )}
               />
