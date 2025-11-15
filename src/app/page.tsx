@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { SavedLink } from "@/lib/types";
 
-import { Header } from "@/components/header";
+import { AppLayout } from "@/components/app-layout";
 import { LinkForm } from "@/components/link-form";
 import { LinkLibrary } from "@/components/link-library";
 import { LibrarySkeleton } from "@/components/library-skeleton";
@@ -46,22 +46,26 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <Header />
-      <main className="flex-grow container mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-12">
+    <AppLayout>
+      <div className="flex flex-col space-y-12">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold font-heading tracking-tight">Welcome Back!</h1>
+          <p className="text-muted-foreground text-lg">Start organizing your video links with AI-powered categorization.</p>
+        </div>
+
         <LinkForm onLinkAdded={handleLinkAdded} existingCategories={existingCategories} links={links} />
-        <Separator className="my-12" />
+        
+        <Separator className="my-8" />
+        
         <div className="space-y-4">
-          <h2 className="text-3xl font-bold text-center font-heading tracking-tight">Your Link Library</h2>
-          <p className="text-muted-foreground text-center max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold font-heading tracking-tight">Your Link Library</h2>
+          <p className="text-muted-foreground max-w-2xl">
             Browse, search, and manage your saved links. Your collection is stored locally in your browser.
           </p>
         </div>
+        
         {isClient ? <LinkLibrary links={links} onDelete={handleDelete} /> : <LibrarySkeleton />}
-      </main>
-      <footer className="text-center py-6 text-sm text-muted-foreground border-t">
-        <p>&copy; {new Date().getFullYear()} LinkSever - Your smart video companion.</p>
-      </footer>
-    </div>
+      </div>
+    </AppLayout>
   );
 }

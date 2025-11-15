@@ -13,7 +13,6 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { categorizeLinkAction } from "@/app/actions";
 import type { CategorizationResult, SavedLink } from "@/lib/types";
 
 const formSchema = z.object({
@@ -30,6 +29,9 @@ export function LinkForm({ onLinkAdded, existingCategories, links }: LinkFormPro
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categorizationResult, setCategorizationResult] = useState<CategorizationResult | null>(null);
   const [url, setUrl] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [newCategory, setNewCategory] = useState('');
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -65,14 +67,32 @@ export function LinkForm({ onLinkAdded, existingCategories, links }: LinkFormPro
     setUrl(values.url);
 
     try {
-      const result = await categorizeLinkAction(values.url);
+      // Use API endpoint instead of direct server action to avoid caching issues
+      const response = await fetch('/api/link-categorize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: values.url }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to categorize link');
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to categorize link');
+      }
+
+      const result = data.data;
       if (result.confidence >= 0.8) {
         const newLink: SavedLink = {
           id: crypto.randomUUID(),
           url: values.url,
           title: result.title,
           description: result.description,
-          creatorName: result.creatorName, // Add this line
+          creatorName: result.creatorName,
           category: result.category,
           thumbnailUrl: result.thumbnailUrl,
           createdAt: new Date().toISOString(),
@@ -91,6 +111,7 @@ export function LinkForm({ onLinkAdded, existingCategories, links }: LinkFormPro
         setCategorizationResult(result);
       }
     } catch (error) {
+      console.error('Categorization error:', error);
       toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
@@ -108,7 +129,7 @@ export function LinkForm({ onLinkAdded, existingCategories, links }: LinkFormPro
         url: url,
         title: categorizationResult.title,
         description: categorizationResult.description,
-        creatorName: categorizationResult.creatorName, // Add this line
+        creatorName: categorizationResult.creatorName,
         category: category,
         thumbnailUrl: categorizationResult.thumbnailUrl,
         createdAt: new Date().toISOString(),
@@ -124,7 +145,21 @@ export function LinkForm({ onLinkAdded, existingCategories, links }: LinkFormPro
     });
     setCategorizationResult(null);
     setUrl('');
+    setSelectedCategory('');
+    setNewCategory('');
+    setShowNewCategoryInput(false);
     form.reset();
+  };
+
+  const handleNewCategorySubmit = () => {
+    if (!newCategory.trim()) {
+      toast({
+        variant: "destructive",
+        description: "Please enter a category name.",
+      });
+      return;
+    }
+    handleManualCategorySelection(newCategory.trim());
   };
 
   return (
@@ -150,14 +185,24 @@ export function LinkForm({ onLinkAdded, existingCategories, links }: LinkFormPro
                     <FormControl>
                     <div className="relative">
                       <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input placeholder="https://www.youtube.com/watch?v=..." {...field} id="link-input" className="pl-10 h-11" />
+                      <Input 
+                        placeholder="https://www.youtube.com/watch?v=..." 
+                        {...field} 
+                        id="link-input" 
+                        className="pl-10 h-11"
+                        disabled={isSubmitting}
+                      />
                     </div>
                   </FormControl>
                   <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto h-11 shrink-0 bg-primary hover:bg-primary/90">
+              <Button 
+                type="submit" 
+                disabled={isSubmitting} 
+                className="w-full sm:w-auto h-11 shrink-0 bg-primary hover:bg-primary/90"
+              >
                 {isSubmitting ? (
                   <>
                     <Loader className="mr-2 h-4 w-4 animate-spin" />
@@ -175,31 +220,87 @@ export function LinkForm({ onLinkAdded, existingCategories, links }: LinkFormPro
         </CardContent>
       </Card>
 
-      <Dialog open={!!categorizationResult} onOpenChange={() => setCategorizationResult(null)}>
-        <DialogContent>
+      <Dialog open={!!categorizationResult} onOpenChange={() => {
+        setCategorizationResult(null);
+        setSelectedCategory('');
+        setNewCategory('');
+        setShowNewCategoryInput(false);
+      }}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="text-amber-500" />
-              Confirm Category
+              Choose Category
               </DialogTitle>
             <DialogDescription>
-              We're not quite sure about this one. Our AI suggested <span className="font-bold">{categorizationResult?.category}</span>, but please select the correct category to improve accuracy.
+              {showNewCategoryInput 
+                ? "Create a new category for this link."
+                : `Select a category from existing ones, or create a new one. AI suggested: ${categorizationResult?.category}`}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Select onValueChange={handleManualCategorySelection} defaultValue={categorizationResult?.category}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {existingCategories.map(cat => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter>
-             <Button variant="outline" onClick={() => setCategorizationResult(null)}>Cancel</Button>
+          
+          {!showNewCategoryInput ? (
+            <div className="space-y-4 py-4">
+              <Select value={selectedCategory} onValueChange={handleManualCategorySelection}>
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Select from existing categories" />
+                </SelectTrigger>
+                <SelectContent className="min-w-[300px]">
+                  {existingCategories.map(cat => (
+                    <SelectItem key={cat} value={cat} className="cursor-pointer py-2.5">{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowNewCategoryInput(true)}
+                className="w-full"
+              >
+                + Create New Category
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4 py-4">
+              <Input 
+                placeholder="Enter new category name"
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleNewCategorySubmit();
+                  }
+                }}
+                className="h-11"
+                autoFocus
+              />
+            </div>
+          )}
+
+          <DialogFooter className="flex gap-2 justify-end">
+            {showNewCategoryInput && (
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowNewCategoryInput(false);
+                  setNewCategory('');
+                }}
+              >
+                Back
+              </Button>
+            )}
+            {showNewCategoryInput && (
+              <Button 
+                onClick={handleNewCategorySubmit}
+                className="bg-primary hover:bg-primary/90"
+              >
+                Create & Save
+              </Button>
+            )}
+            {!showNewCategoryInput && (
+              <Button variant="outline" onClick={() => setCategorizationResult(null)}>
+                Cancel
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

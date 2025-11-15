@@ -3,11 +3,14 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
+import { ThemeProvider } from 'next-themes';
 
 export const metadata: Metadata = {
-  title: 'LinkSever',
+  title: 'LinkSaver',
   description: 'Intelligently categorize and save your video links.',
 };
+
+export const viewport = 'width=device-width, initial-scale=1, maximum-scale=5';
 
 export default function RootLayout({
   children,
@@ -15,10 +18,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased">
-        {children}
-        <Toaster />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

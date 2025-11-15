@@ -1,77 +1,124 @@
 'use server';
-/**
- * @fileOverview Categorizes a shared video link using AI.
- *
- * - categorizeSharedVideoLink - A function that categorizes a shared video link.
- * - CategorizeSharedVideoLinkInput - The input type for the categorizeSharedVideoLink function.
- * - CategorizeSharedVideoLinkOutput - The return type for the categorizeSharedVideoLink function.
- */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import * as cheerio from 'cheerio';
 
+async function extractMetadataFallback(url: string) {
+  // Fallback: Extract metadata using basic fetch without scraping
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch URL: ${response.status}`);
+    }
+
+    const html = await response.text();
+    const $ = cheerio.load(html);
+
+    return {
+      title: $('meta[property="og:title"]').attr('content') || $('title').text() || 'No title found',
+      description: $('meta[property="og:description"]').attr('content') || $('meta[name="description"]').attr('content') || 'No description found',
+      creatorName: $('meta[property="og:site_name"]').attr('content') || 'Unknown',
+      thumbnailUrl: $('meta[property="og:image"]').attr('content') || '',
+    };
+  } catch (error) {
+    console.error('Fallback metadata extraction failed:', error);
+    return {
+      title: 'Link from ' + new URL(url).hostname,
+      description: 'No description available',
+      creatorName: 'Unknown',
+      thumbnailUrl: '',
+    };
+  }
+}
+
 async function extractMetadata(url: string) {
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+  const SCRAPING_API_KEY = process.env.BROWSERLESS_API_KEY;
+  
+  if (!SCRAPING_API_KEY) {
+    console.warn('BROWSERLESS_API_KEY not configured, using fallback metadata extraction');
+    return extractMetadataFallback(url);
   }
-  const html = await response.text();
-  const $ = cheerio.load(html);
 
-  let creatorName = 'Unknown';
-  const jsonLdScript = $('script[type="application/ld+json"]').html();
-  if (jsonLdScript) {
-    try {
-      const jsonData = JSON.parse(jsonLdScript);
-      const graph = jsonData['@graph'] || [jsonData];
-      for (const item of graph) {
-        if (
-          (item['@type'] === 'VideoObject' || item['@type'] === 'Clip') &&
-          item.author?.name
-        ) {
-          creatorName = item.author.name;
-          break;
+  const scrapingUrl = `https://chrome.browserless.io/scrape?token=${SCRAPING_API_KEY}`;
+
+  try {
+    const response = await fetch(scrapingUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: url,
+        elements: [{ selector: 'body' }],
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(`Browserless API returned ${response.status}, using fallback metadata extraction`);
+      return extractMetadataFallback(url);
+    }
+
+    const jsonResponse = await response.json();
+    const html = jsonResponse.data[0].results[0].html;
+    const $ = cheerio.load(html);
+
+    let creatorName = 'Unknown';
+    const jsonLdScript = $('script[type="application/ld+json"]').html();
+    if (jsonLdScript) {
+      try {
+        const jsonData = JSON.parse(jsonLdScript);
+        const graph = jsonData['@graph'] || [jsonData];
+        for (const item of graph) {
+          if (
+            (item['@type'] === 'VideoObject' || item['@type'] === 'Clip') &&
+            item.author?.name
+          ) {
+            creatorName = item.author.name;
+            break;
+          }
+          if (item.author?.name) {
+            creatorName = item.author.name;
+            break;
+          }
         }
-        if (item.author?.name) {
-          creatorName = item.author.name;
-          break;
-        }
+      } catch (e) {
+        console.error('Failed to parse JSON-LD', e);
       }
-    } catch (e) {
-      console.error('Failed to parse JSON-LD', e);
     }
-  }
 
-  const getMetaTag = (name: string) => {
-    let content = $(`meta[property="og:${name}"]`).attr('content');
-    if (!content) {
-      content = $(`meta[name="${name}"]`).attr('content');
+    const getMetaTag = (name: string) => {
+      let content = $(`meta[property="og:${name}"]`).attr('content');
+      if (!content) {
+        content = $(`meta[name="${name}"]`).attr('content');
+      }
+      return content || '';
+    };
+
+    if (creatorName === 'Unknown') {
+      creatorName =
+        getMetaTag('author') ||
+        getMetaTag('article:author') ||
+        $('#upload-info a.yt-simple-endpoint').first().text() ||
+        getMetaTag('og:site_name') ||
+        'Unknown';
     }
-    return content || '';
-  };
 
-  // 2. Fallback to meta tags and specific selectors if JSON-LD fails
-  if (creatorName === 'Unknown') {
-    creatorName =
-      getMetaTag('author') ||
-      getMetaTag('article:author') ||
-      $('#upload-info a.yt-simple-endpoint').first().text() ||
-      getMetaTag('og:site_name') ||
-      'Unknown';
+    return {
+      title: getMetaTag('title') || $('title').text() || 'No title found',
+      description: getMetaTag('description') || 'No description found',
+      creatorName: creatorName.trim(),
+      thumbnailUrl: getMetaTag('image'),
+    };
+  } catch (error) {
+    console.error('Browserless scraping failed:', error);
+    return extractMetadataFallback(url);
   }
-
-  return {
-    title: getMetaTag('title') || $('title').text() || 'No title found',
-    description: getMetaTag('description') || 'No description found',
-    creatorName: creatorName.trim(),
-    thumbnailUrl: getMetaTag('image'),
-  };
 }
 
 const CategorizeSharedVideoLinkInputSchema = z.object({
@@ -107,7 +154,6 @@ export async function categorizeSharedVideoLink(
   return categorizeSharedVideoLinkFlow(input);
 }
 
-// The prompt now takes plain text and only outputs the category info.
 const prompt = ai.definePrompt({
   name: 'categorizeSharedVideoLinkPrompt',
   input: {
@@ -140,10 +186,7 @@ const categorizeSharedVideoLinkFlow = ai.defineFlow(
     outputSchema: CategorizeSharedVideoLinkOutputSchema,
   },
   async input => {
-    // Step 1: Scrape the metadata directly.
     const metadata = await extractMetadata(input.link);
-
-    // Step 2: Pass the scraped text to the AI for categorization.
     const {output} = await prompt({
       title: metadata.title,
       description: metadata.description,
@@ -153,7 +196,6 @@ const categorizeSharedVideoLinkFlow = ai.defineFlow(
       throw new Error("Failed to get a response from the AI model.");
     }
 
-    // Step 3: Combine the scraped data with the AI's output.
     return {
       title: metadata.title,
       description: metadata.description,
@@ -164,3 +206,4 @@ const categorizeSharedVideoLinkFlow = ai.defineFlow(
     };
   }
 );
+

@@ -35,11 +35,14 @@ export function LinkLibrary({ links, onDelete }: LinkLibraryProps) {
     return links
       .filter((link) => {
         const search = searchTerm.toLowerCase();
-        return (
+        const matchesSearch =
           link.title.toLowerCase().includes(search) ||
           link.description.toLowerCase().includes(search) ||
-          link.url.toLowerCase().includes(search)
-        );
+          link.url.toLowerCase().includes(search);
+        
+        const matchesCategory = filterCategory === "All" || link.category === filterCategory;
+        
+        return matchesSearch && matchesCategory;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }, [links, searchTerm, filterCategory]);
@@ -76,9 +79,9 @@ export function LinkLibrary({ links, onDelete }: LinkLibraryProps) {
                   <SelectTrigger className="w-full h-11" aria-label="Filter by category">
                     <SelectValue placeholder="Filter by category" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="min-w-[200px]">
                     {dynamicCategories.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      <SelectItem key={cat} value={cat} className="cursor-pointer py-2.5">{cat}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -87,12 +90,12 @@ export function LinkLibrary({ links, onDelete }: LinkLibraryProps) {
           </Sheet>
           </div>
          <Select value={filterCategory} onValueChange={setFilterCategory}>
-             <SelectTrigger className="w-full md:w-[220px] h-11 hidden md:block" aria-label="Filter by category">
+             <SelectTrigger className="w-full md:w-[240px] h-11 hidden md:flex" aria-label="Filter by category">
              <SelectValue placeholder="Filter by category" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="min-w-[240px]">
             {dynamicCategories.map(cat => (
-              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+              <SelectItem key={cat} value={cat} className="cursor-pointer py-2.5">{cat}</SelectItem>
             ))}
           </SelectContent>
         </Select>
